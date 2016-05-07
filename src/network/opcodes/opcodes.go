@@ -9,4 +9,6 @@ const (
 	Join           byte = 0x03
 	Leave          byte = 0x04
 	Heartbeat      byte = 0x05
+	Connect        byte = 0x06
+	NameInUse      byte = 0x07
 )
