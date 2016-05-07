@@ -2,7 +2,6 @@ package hog
 
 import (
 	"bytes"
-	"logger"
 	"network/opcodes"
 	"unicode/utf8"
 )
@@ -13,10 +12,7 @@ type Message struct {
 }
 
 func ParseMessage(buff []byte) Message {
-	logger.LogString("Received message with the following content...")
-	logger.LogBytes(buff)
-
-	byte := byte(buff[1])
+	o := buff[0]
 	args := []string{}
 
 	buff = buff[1:]
@@ -52,5 +48,5 @@ func ParseMessage(buff []byte) Message {
 		args = append(args, string(arg))
 	}
 
-	return Message{Op: byte, Args: args}
+	return Message{Op: o, Args: args}
 }

@@ -1,7 +1,7 @@
 package hog
 
 import (
-	"fmt"
+	"config"
 	"logger"
 	"net"
 	"time"
@@ -27,32 +27,34 @@ is still alive. If the connection is no longer alive then
 */
 func (i *Instance) heartbeat() {
 	hbi := heartbeatInterval * time.Second
-	ticker := time.NewTicker(hbi)
+	t := time.NewTicker(hbi)
+	s := false
 
-	go func() {
-		for now := range ticker.C {
-			stop := false
-
-			/*
-				If the lastReceived channel is empty that means
-				we have not recieved a heartbeat within the last
-				heartbeatInterval seconds. If there is a heartbeat,
-				check to see if it is within the interval.
-			*/
-			select {
-			case lastSeen := <-i.lastReceived:
-				stop = lastSeen.Add(hbi).Before(now)
-			default:
-				stop = true
-			}
-
-			if stop {
-				logger.LogString(fmt.Sprintf("Failed to receive heartbeat from %s.", i.name))
-				ticker.Stop()
-				i.Close()
-			}
+	for now := range t.C {
+		/*
+			If the lastReceived channel is empty that means
+			we have not recieved a heartbeat within the last
+			heartbeatInterval seconds. If there is a heartbeat,
+			check to see if it is within the interval.
+		*/
+		select {
+		case last := <-i.lastReceived:
+			s = last.Add(hbi).Before(now)
+		default:
+			s = true
 		}
-	}()
+
+		if s {
+			break
+		}
+	}
+
+	if config.Debug {
+		logger.Info.Println("Failed to receive heartbeat from " + i.name + ".")
+	}
+
+	t.Stop()
+	i.Close()
 }
 
 /*
@@ -63,7 +65,14 @@ still occupied. Rather, instead of discarding the new heartbeat time
 replace the stored time with the new time.
 */
 func (i *Instance) listen() {
+	for true {
+		buff := make([]byte, 256)
+		_, err := i.connection.Read(buff)
 
+		if err != nil && config.Debug {
+			logger.Error.Println(err)
+		}
+	}
 }
 
 func (i *Instance) Close() {

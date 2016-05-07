@@ -1,44 +1,20 @@
 package logger
 
 import (
-	"config"
-	"fmt"
-	"strings"
-	"time"
+	"log"
+	"os"
 )
 
-func formatByteSlice(bytes []byte) string {
-	repr := []string{}
+var (
+	Info    *log.Logger
+	Warning *log.Logger
+	Error   *log.Logger
+)
 
-	for _, b := range bytes {
-		repr = append(repr, fmt.Sprintf("%#x", b))
-	}
-
-	return fmt.Sprintf("[%s]", strings.Join(repr, " "))
-}
-
-func now() string {
-	return time.Now().Format(time.RFC1123)
-}
-
-func debugPrefix() {
-	fmt.Printf("[%s] DEBUG: ", now())
-}
-
-func LogString(message string) {
-	if !config.Debug {
-		return
-	}
-
-	debugPrefix()
-	fmt.Println(message)
-}
-
-func LogBytes(bytes []byte) {
-	if !config.Debug {
-		return
-	}
-
-	debugPrefix()
-	fmt.Println(formatByteSlice(bytes))
+func init() {
+	handler := os.Stdout
+	params := log.Ldate | log.Ltime | log.Lshortfile
+	Info = log.New(handler, "INFO: ", params)
+	Warning = log.New(handler, "WARNING: ", params)
+	Error = log.New(handler, "ERROR: ", params)
 }

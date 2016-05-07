@@ -11,4 +11,7 @@ const (
 	Heartbeat      byte = 0x05
 	Connect        byte = 0x06
 	NameInUse      byte = 0x07
+	RequestHistory byte = 0x08
+	ReceiveHistory byte = 0x09
+	ChangeName     byte = 0x0A
 )
