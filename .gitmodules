@@ -1,0 +1,3 @@
+[submodule "Hog.wiki"]
+	path = docs
+	url = https://github.com/WildAndrewLee/Hog.wiki.git
