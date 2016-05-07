@@ -9,25 +9,22 @@ type Instance struct {
 	ipAddress    net.IPAddr
 	connection   net.Conn
 	name         string
-	lastReceived time.Time
+	lastReceived chan time.Time
 }
 
 const heartbeatInterval = 5 // Seconds
 
 func (i *Instance) heartbeat() {
-	i.lastReceived = time.Now()
-
 	hbi := heartbeatInterval * time.Second
 	ticker := time.NewTicker(hbi)
 
 	go func() {
-		for t := range ticker.C {
-			if i.lastReceived.Add(hbi).Before(t) {
+		for range ticker.C {
+			select {
+			case <-i.lastReceived:
+			default:
 				ticker.Stop()
 				i.Close()
-				return
-			} else {
-				i.lastReceived = t
 			}
 		}
 	}()
