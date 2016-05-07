@@ -1,6 +1,7 @@
 package hog
 
 import (
+	"bytes"
 	"logger"
 	"network/opcodes"
 	"unicode/utf8"
@@ -29,7 +30,7 @@ func ParseMessage(buff []byte) Message {
 			[0x11, 0x10, 0xFF, 0xFF, 0x3C, 0x49] => [[0x11, 0x10], [0x3C, 0x49]]
 		*/
 		if len(buff) >= 2 {
-			if buff[0] == opcodes.Separator && buff[1] == opcodes.Separator {
+			if bytes.Equal(buff[0:2], opcodes.Separator) {
 				args = append(args, string(arg))
 				arg = []rune{}
 

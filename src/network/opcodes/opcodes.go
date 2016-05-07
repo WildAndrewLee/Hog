@@ -1,7 +1,9 @@
 package opcodes
 
+// Go y u no hav slice constants.
+var Separator = []byte{0xFF, 0xFF}
+
 const (
-	Separator      byte = 0xFF
 	SendMessage    byte = 0x01
 	ReceiveMessage byte = 0x02
 	Join           byte = 0x03
