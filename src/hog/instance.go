@@ -25,6 +25,7 @@ func (i *Instance) heartbeat() {
 			default:
 				ticker.Stop()
 				i.Close()
+				return
 			}
 		}
 	}()
