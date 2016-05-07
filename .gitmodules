@@ -1,3 +1,6 @@
 [submodule "docs/Hog.wiki"]
 	path = docs/Hog.wiki
 	url = https://github.com/WildAndrewLee/Hog.wiki.git
+[submodule "Hog.wiki"]
+	path = Hog.wiki
+	url = https://github.com/WildAndrewLee/Hog.wiki.git
