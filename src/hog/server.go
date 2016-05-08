@@ -81,9 +81,13 @@ func processMessage(r rawMessage) {
 			i.lastReceived <- time.Now()
 		}
 	case opcodes.Connect:
-		i.ChangeName(m.Args[0])
+		fallthrough
 	case opcodes.ChangeName:
-		i.ChangeName(m.Args[0])
+		if len(m.Args) == 1 {
+			i.ChangeName(m.Args[0])
+			return
+		}
+		fallthrough
 	default:
 		if config.Debug {
 			logger.Info.Println("Received invalid message:", b)
