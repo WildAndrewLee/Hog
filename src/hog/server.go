@@ -27,20 +27,18 @@ func enqueueMessage(i *instance, message []byte) {
 	messageQueue <- rawMessage{i: i, b: message}
 }
 
-func joinMessage(name string) {
-	m := NewMessage(opcodes.Join, name)
-
+func broadcastMessage(m []byte) {
 	for _, c := range clients {
 		c.connection.Write(m)
 	}
 }
 
-func exitMessage(name string) {
-	m := NewMessage(opcodes.Leave, name)
+func joinMessage(name string) {
+	broadcastMessage(NewMessage(opcodes.Join, name))
+}
 
-	for _, c := range clients {
-		c.connection.Write(m)
-	}
+func exitMessage(name string) {
+	broadcastMessage(NewMessage(opcodes.Leave, name))
 }
 
 func nameInUse(name string) bool {
@@ -73,7 +71,7 @@ func processMessage(r rawMessage) {
 		if i.name == "" {
 			i.connection.Write(NewMessage(opcodes.OpRefused))
 		} else {
-			enqueueMessage(i, NewMessage(opcodes.ReceiveMessage, i.name, m.Args[0]))
+			broadcastMessage(NewMessage(opcodes.ReceiveMessage, i.name, m.Args[0]))
 		}
 	case opcodes.Heartbeat:
 		select {

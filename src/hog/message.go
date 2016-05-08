@@ -51,6 +51,11 @@ func ParseMessage(buff []byte) message {
 	return message{Op: o, Args: args}
 }
 
+/*
+Constructs a byte slice given a message op code and
+a variable number of string arguments. Truncates the byte
+array in the event that a message is too long.
+*/
 func NewMessage(o byte, m ...string) []byte {
 	b := []byte{o}
 
@@ -66,6 +71,7 @@ func NewMessage(o byte, m ...string) []byte {
 
 	if l > 0xFFFF+2 {
 		b = b[:0xFFFF]
+		l = 0xFFFF
 	}
 
 	b = append([]byte{byte(l >> 16), byte(l & 0xFFFF)}, b...)

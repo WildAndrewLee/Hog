@@ -139,8 +139,13 @@ func (i *instance) ChangeName(name string) {
 		return
 	}
 
+	if len(name) == 0 || len(name) > config.MaxNameLength {
+		i.connection.Write(NewMessage(opcodes.NameTooLong))
+	}
+
 	if nameInUse(name) {
 		i.connection.Write(NewMessage(opcodes.NameInUse))
+		return
 	}
 
 	i.name = name
@@ -157,6 +162,7 @@ func NewInstance(c net.Conn) *instance {
 	i.e = make(chan bool, 1)
 	i.m = make(chan []byte, 1)
 
+	i.e <- false
 	i.lastReceived <- time.Now()
 
 	return &i
