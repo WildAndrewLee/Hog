@@ -14,4 +14,5 @@ const (
 	RequestHistory byte = 0x08
 	ReceiveHistory byte = 0x09
 	ChangeName     byte = 0x0A
+	Announce       byte = 0x0B
 )
