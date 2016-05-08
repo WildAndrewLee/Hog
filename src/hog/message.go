@@ -6,12 +6,12 @@ import (
 	"unicode/utf8"
 )
 
-type Message struct {
+type message struct {
 	Op   byte
 	Args []string
 }
 
-func ParseMessage(buff []byte) Message {
+func ParseMessage(buff []byte) message {
 	o := buff[0]
 	args := []string{}
 
@@ -48,7 +48,7 @@ func ParseMessage(buff []byte) Message {
 		args = append(args, string(arg))
 	}
 
-	return Message{Op: o, Args: args}
+	return message{Op: o, Args: args}
 }
 
 func NewMessage(o byte, m ...string) []byte {
