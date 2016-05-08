@@ -1,7 +1,9 @@
 package hog
 
 import (
+	"bytes"
 	"config"
+	"io"
 	"logger"
 	"net"
 	"time"
@@ -24,6 +26,7 @@ const heartbeatInterval = 10 // Seconds
 /*
 Keep checking to see if the server-client connection
 is still alive. If the connection is no longer alive then
+close the connection on our end.
 */
 func (i *Instance) heartbeat() {
 	hbi := heartbeatInterval * time.Second
@@ -65,13 +68,19 @@ still occupied. Rather, instead of discarding the new heartbeat time
 replace the stored time with the new time.
 */
 func (i *Instance) listen() {
-	for true {
-		buff := make([]byte, 256)
-		_, err := i.connection.Read(buff)
+	for {
+		buff := new(bytes.Buffer)
+		_, err := io.Copy(buff, i.connection)
 
-		if err != nil && config.Debug {
-			logger.Error.Println(err)
+		if err != nil {
+			if config.Debug {
+				logger.Error.Println(err)
+			}
+
+			i.Close()
 		}
+
+		EnqueueMessage(buff.Bytes())
 	}
 }
 
