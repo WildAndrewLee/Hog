@@ -50,3 +50,17 @@ func ParseMessage(buff []byte) Message {
 
 	return Message{Op: o, Args: args}
 }
+
+func NewMessage(o byte, m ...string) []byte {
+	b := []byte{o}
+
+	for _, ele := range m {
+		if len(b) > 1 {
+			b = append(b, opcodes.Separator...)
+		}
+
+		b = append(b, []byte(ele)...)
+	}
+
+	return b
+}

@@ -1,23 +1,43 @@
 package hog
 
-import "config"
+import (
+	"config"
+	"logger"
+	"network/opcodes"
+)
 
+// Channel for messages to the entire room ONLY.
 var messageQueue chan []byte
+var clients []Instance
 
 func init() {
 	messageQueue = make(chan []byte, config.MessageQueueSize)
 }
 
-func EnqueueMessage(message []byte) {
+func enqueueMessage(message []byte) {
 	messageQueue <- message
 }
 
-func JoinMessage(name string) {
-	// Use Join opcode.
-	// [0x3, <name in bytes>...]
+func joinMessage(name string) {
+	enqueueMessage(NewMessage(opcodes.Join, name))
 }
 
-func ExitMessage(name string) {
-	// Use Leave opcode.
-	// [0x4, <name in bytes>...]
+func exitMessage(name string) {
+	enqueueMessage(NewMessage(opcodes.Leave, name))
+}
+
+func nameInUse(name string) bool {
+	for _, c := range clients {
+		if c.name == name {
+			return true
+		}
+	}
+
+	return false
+}
+
+func processQueue() {
+	for m := range messageQueue {
+		logger.Info.Println("Processing message: ", m)
+	}
 }
