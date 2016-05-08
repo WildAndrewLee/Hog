@@ -47,13 +47,6 @@ func (i *instance) heartbeat() {
 			s = last.Add(hbi).Before(now)
 		case <-i.e:
 			return
-		default:
-			/*
-			   This should not happen because
-			   we always give instances an initial
-			   heartbeat on creation.
-			*/
-			s = true
 		}
 
 		if s {
@@ -149,8 +142,6 @@ func (i *instance) ChangeName(name string) {
 	}
 
 	i.name = name
-
-	joinMessage(i.name)
 }
 
 func NewInstance(c net.Conn) *instance {

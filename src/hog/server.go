@@ -61,6 +61,13 @@ func processQueue() {
 	}
 }
 
+func invalidOp(i *instance, b []byte) {
+	if config.Debug {
+		logger.Info.Println("Received invalid message:", b)
+	}
+	i.connection.Write(NewMessage(opcodes.OpRefused))
+}
+
 func processMessage(r rawMessage) {
 	i := r.i
 	b := r.b
@@ -70,6 +77,8 @@ func processMessage(r rawMessage) {
 	case opcodes.SendMessage:
 		if i.name == "" {
 			i.connection.Write(NewMessage(opcodes.OpRefused))
+		} else if len(m.Args) != 1 {
+			invalidOp(i, b)
 		} else {
 			broadcastMessage(NewMessage(opcodes.ReceiveMessage, i.name, m.Args[0]))
 		}
@@ -81,18 +90,18 @@ func processMessage(r rawMessage) {
 			i.lastReceived <- time.Now()
 		}
 	case opcodes.Connect:
-		fallthrough
+		if len(m.Args) != 1 {
+			invalidOp(i, b)
+		}
+		i.ChangeName(m.Args[0])
+		joinMessage(i.name)
 	case opcodes.ChangeName:
-		if len(m.Args) == 1 {
-			i.ChangeName(m.Args[0])
-			return
+		if len(m.Args) != 1 {
+			invalidOp(i, b)
 		}
-		fallthrough
+		i.ChangeName(m.Args[0])
 	default:
-		if config.Debug {
-			logger.Info.Println("Received invalid message:", b)
-		}
-		i.connection.Write(NewMessage(opcodes.OpRefused))
+		invalidOp(i, b)
 	}
 }
 
