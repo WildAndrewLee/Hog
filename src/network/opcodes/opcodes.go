@@ -14,4 +14,5 @@ const (
 	Connect        byte = 0x07
 	ChangeName     byte = 0x08
 	NameInUse      byte = 0x09
+	ConnectSuccess byte = 0x0A
 )

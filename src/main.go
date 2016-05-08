@@ -17,7 +17,9 @@ func main() {
 
 	logger.Info.Println(logger.FormatByteSlice(testBuffer))
 
-	msg := hog.ParseMessage(testBuffer)
+	msg := hog.ParseMessage(testBuffer[2:])
 
-	fmt.Printf("%+v", msg)
+	fmt.Printf("%+v\n", msg)
+
+	hog.Start()
 }

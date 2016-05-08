@@ -62,5 +62,13 @@ func NewMessage(o byte, m ...string) []byte {
 		b = append(b, []byte(ele)...)
 	}
 
+	l := len(b)
+
+	if l > 0xFFFF+2 {
+		b = b[:0xFFFF]
+	}
+
+	b = append([]byte{byte(l >> 16), byte(l & 0xFFFF)}, b...)
+
 	return b
 }

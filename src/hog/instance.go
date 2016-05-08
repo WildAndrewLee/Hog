@@ -1,8 +1,8 @@
 package hog
 
 import (
-	"bytes"
 	"config"
+	"fmt"
 	"io"
 	"logger"
 	"net"
@@ -17,11 +17,12 @@ to account for possible network latency.
 const heartbeatInterval = 10 // Seconds
 
 type instance struct {
-	ipAddress  net.IPAddr
-	connection net.Conn
-	name       string
-	// This channel should be pushed to every 1-5 seconds by the client.
-	lastReceived chan time.Time
+	ipAddress    net.Addr
+	connection   net.Conn
+	name         string
+	lastReceived chan time.Time // This channel should be pushed to every 1-5 seconds by the client.
+	e            chan bool
+	m            chan []byte
 }
 
 /*
@@ -44,7 +45,14 @@ func (i *instance) heartbeat() {
 		select {
 		case last := <-i.lastReceived:
 			s = last.Add(hbi).Before(now)
+		case <-i.e:
+			return
 		default:
+			/*
+			   This should not happen because
+			   we always give instances an initial
+			   heartbeat on creation.
+			*/
 			s = true
 		}
 
@@ -60,23 +68,21 @@ func (i *instance) heartbeat() {
 	}
 
 	if config.Debug {
-		logger.Info.Println("Failed to receive heartbeat from " + i.name + ".")
+		logger.Info.Println(fmt.Sprintf("Failed to receive heartbeat from \"%s\"", i.name), i.ipAddress)
 	}
 
-	t.Stop()
-	i.Close()
+	i.e <- true
 }
 
-/*
-Important Note:
-When writing the receive heartbeat code, make sure to put it
-in a select so there is no blocking when the heartbeat channel is
-still occupied.
-*/
-func (i *instance) listen() {
+func (i *instance) listenHelper() {
 	for {
-		buff := new(bytes.Buffer)
-		_, err := io.Copy(buff, i.connection)
+		tr := make([]byte, 2)
+
+		i.connection.Read(tr)
+		l := int(tr[0]<<8 | tr[1])
+
+		buff := make([]byte, l)
+		_, err := i.connection.Read(buff)
 
 		if err != nil {
 			/*
@@ -87,18 +93,45 @@ func (i *instance) listen() {
 				logger.Error.Println(err)
 			}
 
-			i.Close()
+			i.e <- true
 			return
 		}
 
-		go i.connection.Write(NewMessage(opcodes.Heartbeat))
+		i.m <- buff
+	}
+}
+
+/*
+Important Note:
+When writing the receive heartbeat code, make sure to put it
+in a select so there is no blocking when the heartbeat channel is
+still occupied.
+*/
+func (i *instance) listen() {
+	go i.listenHelper()
+
+	for {
+		select {
+		case m := <-i.m:
+			enqueueMessage(i, m)
+		case e := <-i.e:
+			if e {
+				i.Close()
+				return
+			}
+		}
 	}
 }
 
 func (i *instance) Close() {
+	logger.Info.Println(fmt.Sprintf("Closing connection for \"%s\"", i.name), i.ipAddress)
+
 	exitMessage(i.name)
 	i.connection.Close()
-	close(i.lastReceived)
+
+	if i.lastReceived != nil {
+		close(i.lastReceived)
+	}
 }
 
 func (i *instance) ChangeName(name string) {
@@ -111,5 +144,20 @@ func (i *instance) ChangeName(name string) {
 	}
 
 	i.name = name
+
 	joinMessage(i.name)
+}
+
+func NewInstance(c net.Conn) *instance {
+	i := instance{}
+	i.name = ""
+	i.connection = c
+	i.ipAddress = c.RemoteAddr()
+	i.lastReceived = make(chan time.Time, 1)
+	i.e = make(chan bool, 1)
+	i.m = make(chan []byte, 1)
+
+	i.lastReceived <- time.Now()
+
+	return &i
 }
