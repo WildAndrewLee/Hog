@@ -43,6 +43,11 @@ func (i *instance) heartbeat() {
 			check to see if it is within the interval.
 		*/
 		select {
+		/*
+			Will only block if we are in the middle of updating
+			the current heartbeat time. Updates only occur when
+			we receive a heartbeat from the client.
+		*/
 		case last := <-i.lastReceived:
 			s = last.Add(hbi).Before(now)
 		case <-i.e:
@@ -117,7 +122,9 @@ func (i *instance) listen() {
 }
 
 func (i *instance) Close() {
-	logger.Info.Println(fmt.Sprintf("Closing connection for \"%s\"", i.name), i.ipAddress)
+	if config.Debug {
+		logger.Info.Println(fmt.Sprintf("Closing connection for \"%s\"", i.name), i.ipAddress)
+	}
 
 	exitMessage(i.name)
 	i.connection.Close()
