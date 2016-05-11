@@ -7,7 +7,6 @@ import (
 	"net"
 	"network/opcodes"
 	"strconv"
-	"time"
 )
 
 type rawMessage struct {
@@ -18,9 +17,16 @@ type rawMessage struct {
 // Channel for messages received by the server.
 var messageQueue chan rawMessage
 var clients []*instance
+var handlers map[byte]func(r rawMessage, m message)
 
 func init() {
 	messageQueue = make(chan rawMessage, config.MessageQueueSize)
+	handlers = make(map[byte]func(r rawMessage, m message))
+
+	handlers[opcodes.SendMessage] = sendMessage
+	handlers[opcodes.ChangeName] = tryChangeName
+	handlers[opcodes.Connect] = connect
+	handlers[opcodes.Heartbeat] = heartbeat
 }
 
 func enqueueMessage(i *instance, message []byte) {
@@ -69,39 +75,12 @@ func invalidOp(i *instance, b []byte) {
 }
 
 func processMessage(r rawMessage) {
-	i := r.i
-	b := r.b
-	m := ParseMessage(b)
+	m := ParseMessage(r.b)
 
-	switch m.Op {
-	case opcodes.SendMessage:
-		if i.name == "" {
-			i.connection.Write(NewMessage(opcodes.OpRefused))
-		} else if len(m.Args) != 1 {
-			invalidOp(i, b)
-		} else {
-			broadcastMessage(NewMessage(opcodes.ReceiveMessage, i.name, m.Args[0]))
-		}
-	case opcodes.Heartbeat:
-		select {
-		case i.lastReceived <- time.Now():
-		default:
-			<-i.lastReceived
-			i.lastReceived <- time.Now()
-		}
-	case opcodes.Connect:
-		if len(m.Args) != 1 {
-			invalidOp(i, b)
-		}
-		i.ChangeName(m.Args[0])
-		joinMessage(i.name)
-	case opcodes.ChangeName:
-		if len(m.Args) != 1 {
-			invalidOp(i, b)
-		}
-		i.ChangeName(m.Args[0])
-	default:
-		invalidOp(i, b)
+	if fn, ok := handlers[m.Op]; ok {
+		fn(r, m)
+	} else {
+		invalidOp(r.i, r.b)
 	}
 }
 
