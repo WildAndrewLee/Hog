@@ -51,6 +51,7 @@ func (i *instance) heartbeat() {
 		case last := <-i.lastReceived:
 			s = last.Add(hbi).Before(now)
 		case <-i.e:
+			i.e <- true
 			return
 		}
 
@@ -114,6 +115,7 @@ func (i *instance) listen() {
 			enqueueMessage(i, m)
 		case e := <-i.e:
 			if e {
+				i.e <- true
 				i.Close()
 				return
 			}
@@ -136,15 +138,6 @@ func (i *instance) Close() {
 
 func (i *instance) ChangeName(name string) {
 	if i.name == name {
-		return
-	}
-
-	if len(name) == 0 || len(name) > config.MaxNameLength {
-		i.connection.Write(NewMessage(opcodes.NameTooLong))
-	}
-
-	if nameInUse(name) {
-		i.connection.Write(NewMessage(opcodes.NameInUse))
 		return
 	}
 

@@ -27,16 +27,44 @@ func main() {
 
 	logger.Info.Println(n, err)
 
-	for x := 0; x < 20; x++ {
-		l, err := conn.Write(hog.NewMessage(opcodes.Heartbeat))
+	e := make(chan bool)
 
-		if err != nil || l == 0 {
-			logger.Error.Println("Disconnected from server.")
-			return
+	// Send heartbeat for 1 minute
+	go func() {
+		for x := 0; x < 20; x++ {
+			select {
+			case <-e:
+				return
+			default:
+				l, err := conn.Write(hog.NewMessage(opcodes.Heartbeat))
+
+				if err != nil || l == 0 {
+					logger.Error.Println("Disconnected from server.")
+					return
+				}
+				time.Sleep(3 * time.Second)
+			}
 		}
 
-		logger.Info.Println("Send heartbeat.")
-		time.Sleep(3 * time.Second)
+		logger.Info.Println("Done with heartbeat.")
+	}()
+
+	go func() {
+		for {
+			l, err := conn.Read(buff)
+
+			if err != nil || l == 0 {
+				logger.Error.Println("Disconnected from server.")
+				e <- true
+				return
+			}
+			logger.Info.Println("READ:", buff)
+		}
+	}()
+
+	for x := 0; x < 12; x++ {
+		conn.Write(hog.NewMessage(opcodes.SendMessage, "Hello World!"))
+		time.Sleep(5 * time.Second)
 	}
 
 	time.Sleep(3 * time.Minute)

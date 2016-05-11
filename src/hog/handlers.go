@@ -1,6 +1,7 @@
 package hog
 
 import (
+	"config"
 	"network/opcodes"
 	"time"
 )
@@ -28,7 +29,18 @@ func tryChangeName(r rawMessage, m message) {
 	if len(m.Args) != 1 {
 		invalidOp(r.i, r.b)
 	}
-	r.i.ChangeName(m.Args[0])
+
+	name := m.Args[0]
+
+	if len(name) == 0 || len(name) > config.MaxNameLength {
+		r.i.connection.Write(NewMessage(opcodes.NameTooLong))
+	}
+
+	if nameInUse(name) {
+		r.i.connection.Write(NewMessage(opcodes.NameInUse))
+	}
+
+	r.i.ChangeName(name)
 }
 
 func connect(r rawMessage, m message) {
