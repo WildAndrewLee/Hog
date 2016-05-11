@@ -34,10 +34,12 @@ func tryChangeName(r rawMessage, m message) {
 
 	if len(name) == 0 || len(name) > config.MaxNameLength {
 		r.i.connection.Write(NewMessage(opcodes.NameTooLong))
+		return
 	}
 
 	if nameInUse(name) {
 		r.i.connection.Write(NewMessage(opcodes.NameInUse))
+		return
 	}
 
 	r.i.ChangeName(name)

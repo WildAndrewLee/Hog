@@ -23,7 +23,7 @@ func main() {
 	buff := make([]byte, 64)
 	conn.Read(buff)
 
-	logger.Info.Println(buff)
+	logger.Info.Println(logger.FormatByteSlice(buff))
 
 	logger.Info.Println(n, err)
 
@@ -58,7 +58,7 @@ func main() {
 				e <- true
 				return
 			}
-			logger.Info.Println("READ:", buff)
+			logger.Info.Println("READ:", logger.FormatByteSlice(buff))
 		}
 	}()
 
